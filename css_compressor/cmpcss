@@ -1,0 +1,125 @@
+#!/usr/bin/python
+############### 
+# cmpcss 
+#  Compress a CSS file in prepration for production use. 
+#   
+# AUTHOR 
+#	Michael Crute (mcrute@gmail.com)
+# DATE 
+#	16 June 2006
+# VERSION 
+#	1.0 
+# PURPOSE 
+#	An implementation of a CSS compressor in Python. Written to 
+#	prepare development CSS to production ready CSS. Does the
+#	following:
+#		* Removes spaces intelligently
+#		* Removes charset declarations
+#		* Removes extra semicolons
+#		* Flattens the file (tabs and line breaks)
+# USAGE 
+# 	cmpcss site_dev.css > site_prod.css
+# LICENSE 
+#	You may copy and redistribute this program as you see fit, with no 
+#	restrictions.  
+# WARRANTY 
+#	This program comes with NO warranty, real or implied. If it eats
+#	your CSS, it's not my problem, you should have kept a backup.
+###############
+
+import sys
+import re
+#import string
+
+# The chewy caramel center of the program
+# Don't bitch about the short variable names, it makes it easy to read
+def cleanline(theLine):
+	# Kills line breaks, tabs, and double spaces
+	p = re.compile('(\n|\r|\t|\f|\v)+')
+	m = p.sub('',theLine)
+
+	# Kills double spaces
+	p = re.compile('(  )+')
+	m = p.sub(' ',m)
+
+	# Removes last semicolon before }
+	p = re.compile('(; }|;})+')
+	m = p.sub('}',m)
+
+	# Removes space before {
+	p = re.compile('({ )+')
+	m = p.sub('{',m)
+
+	# Removes all comments
+	p = re.compile('/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/')
+	m = p.sub('',m)
+
+	# Strip off the Charset
+	p = re.compile('@CHARSET .*;')
+	m = p.sub('',m)
+
+	# Strip spaces before the {
+	p = re.compile(' {')
+	m = p.sub('{',m)
+
+	# Strip space after :
+	p = re.compile(': ')
+	m = p.sub(':',m)
+
+	# Strip space after ,
+	p = re.compile(', ')
+	m = p.sub(',',m)
+
+	# Strip space after ;
+	p = re.compile('; ')
+	m = p.sub(';',m)
+
+# May return to add color code compression
+# not a huge space saver so also not high priority
+#	p = re.compile('.*#[0-9A-F]{6}.*')
+#	cc = p.match(m)
+	
+#	if cc:
+#		cc = compcolor(m)
+
+	return m
+
+#def compcolor(m):
+
+# Boring usage info for people too dumb to use the program
+def printusage():
+	print ''
+	print 'SoftGroup CSS Compressor'
+	print ''
+	print 'This is a compressor for CSS files.'
+	print 'As far as I know it doesn\'t break the standards'
+	print 'compliance of the file. If you can find a way'
+	print 'to make it break a file please email me.'
+	print ''
+	print 'Usage: cmpcss <filename>'
+	sys.exit()
+
+# The main routine
+if ( __name__ == "__main__" ):
+	if (len(sys.argv) <= 1):
+		printusage()
+
+	# Open the file for reading
+	try: 
+		theFile = file(sys.argv[1], "r")
+	except IOError:
+		print 'I couldn\'t open your file.'
+		sys.exit()
+	
+	# Initialize temp so it's not scoped to the for loop
+	temp = ''
+	
+	# Loop through the file line by line and clean it
+	for line in theFile:
+		temp = temp + cleanline(line)
+
+	# Once more, clean the entire file string
+	print cleanline(temp)
+
+	# Cleanup after ourselves
+	theFile.close()
