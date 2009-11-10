@@ -42,7 +42,8 @@ class SimpleTable(object):
 
         for row in self.data:
             for i, column in enumerate(row):
-                widths[i] = max(widths[i], len(str(column)))
+                widths[i] = max(widths[i], len(str(column)),
+                                    len(self.headers[i]))
 
         return tuple(widths)
 
