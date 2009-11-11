@@ -1,62 +1,44 @@
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 class SimpleTable(object):
 
-    def __init__(self, data=None, headers=None, first_row_headers=False):
+    def __init__(self, data=None, headers=None, first_row_headers=False,
+                    padding=10):
         self.data = data
         self.headers = headers
+        self.padding = padding
+        self.col_widths = []
         self.first_row_headers = first_row_headers
 
     def __str__(self):
         if self.first_row_headers and not self.headers:
             self.headers = self.data.pop(0)
 
-        return self.format_table()
+        self.col_widths = self._get_column_widths()
+        self.template = self._build_row_template()
 
-    def format_table(self, padding=10):
-        out_buffer = StringIO()
-        column_widths = self.get_column_widths()
-
+        buffer = ""
         if self.headers:
-            out_buffer.write(self.format_headers(column_widths, padding))
+            buffer += self._format_headers()
 
-        for row in self.data:
-            for i, column in enumerate(row):
-                col_width = column_widths[i] + padding
-                out_buffer.write(str(column).ljust(col_width))
+        return buffer + self._format_table()
 
-            out_buffer.write('\n')
+    def _format_table(self):
+        return ''.join([self.template % row for row in self.data])
 
-        return out_buffer.getvalue()
+    def _build_row_template(self):
+        return ''.join(["%%-%ss" % width for width in self.col_widths]) + "\n"
 
-    def get_column_widths(self):
-        """Gets a tuple of the maximum column lengths in a dataset."""
-        maxlen = 0
-        for row in self.data:
-            maxlen = max(maxlen, len(row))
-
+    def _get_column_widths(self):
+        maxlen = max([len(row) for row in self.data])
         widths = [0 for _ in range(maxlen)]
 
         for row in self.data:
             for i, column in enumerate(row):
-                widths[i] = max(widths[i], len(str(column)),
-                                    len(self.headers[i]))
+                header_length = len(self.headers[i])
+                column_length = len(str(column))
+                widths[i] = max(header_length, column_length) + self.padding
 
-        return tuple(widths)
+        return widths
 
-    def format_headers(self, column_widths, padding=10):
-        out_buffer = StringIO()
-        table_width = sum(column_widths) + (padding * len(column_widths))
-
-        for i, header in enumerate(self.headers):
-            col_width = column_widths[i] + padding
-            out_buffer.write(str(header).ljust(col_width))
-
-        out_buffer.write('\n')
-        out_buffer.write('-' * table_width)
-        out_buffer.write('\n')
-
-        return out_buffer.getvalue()
+    def _format_headers(self):
+        table_width = sum(self.col_widths) + len(self.col_widths)
+        return self.template % self.headers + '%s\n' % ('-' * table_width)
